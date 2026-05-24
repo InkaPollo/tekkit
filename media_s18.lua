@@ -52,6 +52,7 @@ local function updateAllVolume()
     if tape.setVolume then pcall(tape.setVolume, v) end
 end
 
+local lastClickTime = 0
 local function whichButton(x, y)
     for _, btn in ipairs(BUTTONS) do
         if x >= btn.x and x < btn.x + btn.w and y == btn.y then
@@ -228,12 +229,14 @@ local function handleAction(action)
 end
 
 local function handleClick(x, y)
+    -- Debounce: ignore clicks within 100ms of the last click
+    local currentTime = os.clock()
+    if currentTime - lastClickTime < 0.1 then
+        return
+    end
+    lastClickTime = currentTime
+    
     local action = whichButton(x, y)
-    -- DEBUG: Show button detection
-    term.setCursorPos(1, 1)
-    term.setTextColor(action and colors.lime or colors.red)
-    term.write(action or ("no match at " .. x .. "," .. y))
-    -- END DEBUG
     if action then handleAction(action) end
 end
 
