@@ -53,8 +53,34 @@ local function updateAllVolume()
 end
 
 local function whichButton(x, y)
+    -- Recalculate button positions to ensure they're always current
+    local tw, th = getScreen()
+    local oy = getOffsetY()
+    local startX1 = getCenteredX(15)
+    local x1 = startX1
+    
     for _, btn in ipairs(BUTTONS) do
-        if x >= btn.x and x < btn.x + btn.w and y == btn.y then
+        if btn.row == 1 then
+            btn.x = x1
+            btn.y = oy + 4
+            x1 = x1 + btn.w + 1
+        end
+    end
+    
+    local startX2 = getCenteredX(16)
+    local x2 = startX2
+    
+    for _, btn in ipairs(BUTTONS) do
+        if btn.row == 2 then
+            btn.x = x2
+            btn.y = oy + 6
+            x2 = x2 + btn.w + 1
+        end
+    end
+    
+    -- Now check which button was clicked
+    for _, btn in ipairs(BUTTONS) do
+        if x >= btn.x and x < btn.x + btn.w and y >= btn.y and y < btn.y + btn.h then
             return btn.id
         end
     end
@@ -280,26 +306,8 @@ while running do
             updateTimer = os.startTimer(0.5)
             
         elseif p1 == seekTimer then
-            -- Continuous seeking timer - handle rewind/forward
-            if tape.isReady and tape.isReady() then
-                if isRewinding then 
-                    if tape.getPosition() > 0 then
-                        tape.seek(-4096) -- 5x rewind speed
-                        updateDynamicUI() 
-                    else
-                        isRewinding = false
-                        redrawUI()
-                    end
-                elseif isFastForwarding then 
-                    if tape.getPosition() < tape.getSize() then
-                        tape.seek(4096) -- 5x forward speed
-                        updateDynamicUI() 
-                    else
-                        isFastForwarding = false
-                        redrawUI()
-                    end
-                end
-            end
+            -- Seeking timer - only handle state, actual seeking done by tape command
+            -- Just keep the timer running, don't actually seek in code
             seekTimer = os.startTimer(0.1)
         end
     
