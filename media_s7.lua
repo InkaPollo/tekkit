@@ -187,22 +187,22 @@ local function handleAction(action)
         isRewinding = false
         isFastForwarding = false
         
-        -- Send command to tape using shell
+        -- Send command to tape using tape methods
         if isPlaying then
-            shell.run("tape", "play")
+            tape.play()
         else
-            shell.run("tape", "stop")
+            tape.stop()
         end
 
     elseif action == "rewind" then
         isRewinding = not isRewinding
         isFastForwarding = false
-        shell.run("tape", "rewind")
+        tape.seek(-4096)
 
     elseif action == "forward" then
         isFastForwarding = not isFastForwarding
         isRewinding = false
-        shell.run("tape", "forward")
+        tape.seek(4096)
 
     elseif action == "vol_up" then
         volume = math.min(20, volume + 1)
@@ -214,7 +214,7 @@ local function handleAction(action)
 
     elseif action == "quit" then
         running = false
-        shell.run("tape", "stop")
+        tape.stop()
         
         -- Safe cleanup
         term.setBackgroundColor(colors.black)
