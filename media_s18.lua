@@ -52,6 +52,9 @@ local function updateAllVolume()
     if tape.setVolume then pcall(tape.setVolume, v) end
 end
 
+local lastClickAction = nil
+local lastClickTime = 0
+
 local function whichButton(x, y)
     for _, btn in ipairs(BUTTONS) do
         if x >= btn.x and x < btn.x + btn.w and y == btn.y then
@@ -197,12 +200,12 @@ local function handleAction(action)
     elseif action == "rewind" then
         isRewinding = not isRewinding
         isFastForwarding = false
-        pcall(function() tape.seek(-4096) end)
+        pcall(function() tape.seek(-8192) end)
 
     elseif action == "forward" then
         isFastForwarding = not isFastForwarding
         isRewinding = false
-        pcall(function() tape.seek(4096) end)
+        pcall(function() tape.seek(8192) end)
 
     elseif action == "vol_up" then
         volume = math.min(20, volume + 1)
@@ -229,6 +232,14 @@ end
 
 local function handleClick(x, y)
     local action = whichButton(x, y)
+    -- Debounce: ignore repeated clicks of same button within 200ms
+    local currentTime = os.clock()
+    if action == lastClickAction and (currentTime - lastClickTime) < 0.2 then
+        return
+    end
+    lastClickAction = action
+    lastClickTime = currentTime
+    
     if action then handleAction(action) end
 end
 
