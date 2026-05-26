@@ -114,24 +114,36 @@ local function updateDynamicUI()
         term.write(timeText)
     end
     
-    -- Volume Bar (larger and more prominent)
-    if oy + 10 <= th then
-        clearLine(oy + 10)
-        local volW = 30
-        if volW > tw - 4 then volW = tw - 4 end
-        local filled = math.floor((volume / 20) * volW)
-        term.setCursorPos(getCenteredX(volW + 10), oy + 10)
-        term.setTextColor(colors.lime)
-        term.write("Vol: [" .. string.rep("█", filled) .. string.rep("░", volW - filled) .. "]")
+    -- Vertical Volume Bar on right side
+    local barHeight = 5  -- rows for vertical bar
+    local volFilledRows = math.floor((volume / 20) * barHeight)
+    local volX = tw - 1
+    
+    -- Top bracket
+    if oy + 4 <= th then
+        term.setCursorPos(volX, oy + 4)
+        term.setTextColor(colors.yellow)
+        term.write("[")
     end
     
-    if oy + 11 <= th then
-        clearLine(oy + 11)
-        local volPct = math.floor((volume / 20) * 100)
-        local volText = string.format("%d%%", volPct)
-        term.setCursorPos(getCenteredX(#volText), oy + 11)
+    -- Vertical bar segments
+    for i = 1, barHeight do
+        if oy + 3 + i <= th then
+            term.setCursorPos(volX, oy + 3 + i)
+            term.setTextColor(colors.yellow)
+            if i <= volFilledRows then
+                term.write("=")
+            else
+                term.write(" ")
+            end
+        end
+    end
+    
+    -- Bottom bracket
+    if oy + 4 + barHeight <= th then
+        term.setCursorPos(volX, oy + 4 + barHeight)
         term.setTextColor(colors.yellow)
-        term.write(volText)
+        term.write("]")
     end
 end
 
@@ -209,12 +221,12 @@ local function handleAction(action)
     elseif action == "rewind" then
         isRewinding = not isRewinding
         isFastForwarding = false
-        pcall(function() tape.seek(-24576) end)
+        pcall(function() tape.seek(-73728) end)
 
     elseif action == "forward" then
         isFastForwarding = not isFastForwarding
         isRewinding = false
-        pcall(function() tape.seek(24576) end)
+        pcall(function() tape.seek(73728) end)
 
     elseif action == "vol_up" then
         volume = math.min(20, volume + 1)
@@ -304,7 +316,7 @@ while running do
             if tape.isReady and tape.isReady() then
                 if isRewinding then 
                     if tape.getPosition() > 0 then
-                        tape.seek(-12288) -- 15x rewind speed
+                        tape.seek(-36864) -- 45x rewind speed
                         updateDynamicUI() 
                     else
                         isRewinding = false
@@ -312,7 +324,7 @@ while running do
                     end
                 elseif isFastForwarding then 
                     if tape.getPosition() < tape.getSize() then
-                        tape.seek(12288) -- 15x forward speed
+                        tape.seek(36864) -- 45x forward speed
                         updateDynamicUI() 
                     else
                         isFastForwarding = false
