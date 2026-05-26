@@ -1,8 +1,8 @@
 -- CONFIGURATION
 local channel = 55               
 -- Check your terminal to ensure these names match what printed when you clicked the wired modems!
-local reactorAName = "nuclear_reactor_0" 
-local reactorBName = "nuclear_reactor_1" 
+local reactorAName = "ic2:reactor chamber_1" 
+local reactorBName = "ic2:reactor chamber_2" 
 
 -- WRAP PERIPHERALS
 -- This automatically finds the Ender Modem regardless of what side it is on
