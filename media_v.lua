@@ -114,10 +114,10 @@ local function updateDynamicUI()
         term.write(timeText)
     end
     
-    -- Vertical Volume Bar on right side
-    local barHeight = 5  -- rows for vertical bar
-    local volFilledRows = math.floor((volume / 20) * barHeight)
-    local volX = tw - 1
+    -- Vertical Volume Bar positioned right of buttons and title
+    local barHeight = 6  -- rows for vertical bar segments
+    local volFilledRows = math.ceil((volume / 20) * barHeight)
+    local volX = getCenteredX(24) + 26  -- to right of title with space
     
     -- Top bracket
     if oy + 4 <= th then
@@ -128,8 +128,8 @@ local function updateDynamicUI()
     
     -- Vertical bar segments
     for i = 1, barHeight do
-        if oy + 3 + i <= th then
-            term.setCursorPos(volX, oy + 3 + i)
+        if oy + 4 + i <= th then
+            term.setCursorPos(volX, oy + 4 + i)
             term.setTextColor(colors.yellow)
             if i <= volFilledRows then
                 term.write("=")
@@ -140,8 +140,8 @@ local function updateDynamicUI()
     end
     
     -- Bottom bracket
-    if oy + 4 + barHeight <= th then
-        term.setCursorPos(volX, oy + 4 + barHeight)
+    if oy + 4 + barHeight + 1 <= th then
+        term.setCursorPos(volX, oy + 4 + barHeight + 1)
         term.setTextColor(colors.yellow)
         term.write("]")
     end
