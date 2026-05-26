@@ -1,45 +1,45 @@
 -- CONFIGURATION
 local channel = 55               
 local reactorAName = "ic2:reactor chamber_1" 
-local reactorBName = "ic2:reactor chamber_2" -- Update this to match your second reactor!
+local reactorBName = "ic2:reactor chamber_2" -- Update to match your second reactor!
 
--- WRAP PERIPHERALS
+-- INITIALIZATION
 local modem = peripheral.find("modem", function(name, m) return m.isWireless() end) 
-local chamberA = peripheral.wrap(reactorAName) or error("Reactor A cable disconnected")
-local chamberB = peripheral.wrap(reactorBName) or error("Reactor B cable disconnected")
+local chamberA = peripheral.wrap(reactorAName) or error("Reactor 1 disconnected")
+local chamberB = peripheral.wrap(reactorBName) or error("Reactor 2 disconnected")
 
-print("Ender Modem Transmitter Online.")
-print("Broadcasting Dual-Core Data on Channel " .. channel)
+print("Ender Transmitter Online. Broadcasting on Channel " .. channel)
 
--- Helper function to dig into the hidden Metadata table
+-- THE EXTRACTION FUNCTION
 local function extractStats(chamber)
-    -- 1. Ask the chamber for the main core object
+    -- Reach through the chamber to get the actual reactor core
     local core = chamber.getReactorCore()
-    -- 2. Ask the core for its hidden metadata table
-    local data = core.getMetadata()
-    -- 3. Isolate the specific reactor stats
-    local stats = data.reactor or data
+    
+    -- Pull the core's massive metadata dictionary
+    local fullData = core.getMetadata()
+    
+    -- Isolate the 'reactor' table you found
+    local rData = fullData.reactor or {}
+    
+    -- Grab the exact variables
+    local currentEU = rData.euOutput or 0
     
     return {
-        active = stats.active or false,
-        heat = stats.heat or 0,
-        maxHeat = stats.maxHeat or 10000,
-        -- The API uses euOut or energyOutput depending on the exact sub-version
-        eu = stats.euOut or stats.energyOutput or 0
+        active = (currentEU > 0),
+        heat = rData.heat or 0,
+        maxHeat = rData.maxHeat or 10000,
+        eu = currentEU
     }
 end
 
+-- THE BROADCAST LOOP
 while true do
-    -- Package the extracted data into our standard payload
     local payload = {
         type = "reactor_telemetry",
         coreA = extractStats(chamberA),
         coreB = extractStats(chamberB)
     }
     
-    -- Transmit the payload across dimensions
     modem.transmit(channel, channel, payload)
-    
-    -- Send fresh data twice a second
     sleep(0.5) 
 end
