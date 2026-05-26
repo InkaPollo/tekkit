@@ -118,7 +118,7 @@ local function updateDynamicUI()
     local barHeight = 11  -- rows for vertical bar segments
     local volFilledRows = math.ceil((volume / 20) * barHeight)
     local volX = getCenteredX(24) + 26  -- to right of title with space
-    local volStartY = oy - 5  -- start above title
+    local volStartY = oy - 4  -- start above title, both dashes visible
     
     -- Top dash
     if volStartY <= th then
@@ -127,12 +127,12 @@ local function updateDynamicUI()
         term.write("-")
     end
     
-    -- Vertical bar segments
+    -- Vertical bar segments (fill upwards)
     for i = 1, barHeight do
         if volStartY + i <= th then
             term.setCursorPos(volX, volStartY + i)
             term.setTextColor(colors.yellow)
-            if i <= volFilledRows then
+            if i > (barHeight - volFilledRows) then
                 term.write("=")
             else
                 term.write(" ")
