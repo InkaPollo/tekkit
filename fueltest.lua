@@ -1,13 +1,19 @@
 local chamber = peripheral.wrap("ic2:reactor chamber_1")
 
-print("Looking for items...")
+print("Hunting for a fuel rod...")
 
--- Scan until we find the first item, then print everything about it
+-- Scan every slot in the reactor
 for i = 1, chamber.size() do
     local item = chamber.getItemMeta(i)
-    if item then
-        print("--- ITEM FOUND IN SLOT " .. i .. " ---")
-        textutils.pagedPrint(textutils.serialize(item))
-        break -- Stop after the first item
+    
+    if item and item.name then
+        local nameStr = string.lower(item.name)
+        
+        -- ONLY trigger if the item's name contains uranium, mox, or fuel
+        if string.find(nameStr, "uranium") or string.find(nameStr, "mox") or string.find(nameStr, "fuel") then
+            print("--- FUEL ROD FOUND IN SLOT " .. i .. " ---")
+            textutils.pagedPrint(textutils.serialize(item))
+            break -- Stop after we print the first fuel rod
+        end
     end
 end
