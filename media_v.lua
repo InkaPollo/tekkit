@@ -115,21 +115,22 @@ local function updateDynamicUI()
     end
     
     -- Vertical Volume Bar positioned right of buttons and title
-    local barHeight = 6  -- rows for vertical bar segments
+    local barHeight = 11  -- rows for vertical bar segments
     local volFilledRows = math.ceil((volume / 20) * barHeight)
     local volX = getCenteredX(24) + 26  -- to right of title with space
+    local volStartY = oy - 5  -- start above title
     
     -- Top dash
-    if oy + 1 <= th then
-        term.setCursorPos(volX, oy + 1)
+    if volStartY <= th then
+        term.setCursorPos(volX, volStartY)
         term.setTextColor(colors.yellow)
         term.write("-")
     end
     
     -- Vertical bar segments
     for i = 1, barHeight do
-        if oy + 1 + i <= th then
-            term.setCursorPos(volX, oy + 1 + i)
+        if volStartY + i <= th then
+            term.setCursorPos(volX, volStartY + i)
             term.setTextColor(colors.yellow)
             if i <= volFilledRows then
                 term.write("=")
@@ -140,8 +141,8 @@ local function updateDynamicUI()
     end
     
     -- Bottom dash
-    if oy + 1 + barHeight + 1 <= th then
-        term.setCursorPos(volX, oy + 1 + barHeight + 1)
+    if volStartY + barHeight + 1 <= th then
+        term.setCursorPos(volX, volStartY + barHeight + 1)
         term.setTextColor(colors.yellow)
         term.write("-")
     end
