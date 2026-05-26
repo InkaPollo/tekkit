@@ -25,11 +25,9 @@ local function drawProgressBar(x, y, totalWidth, current, visualMax, labelText)
     local barW = totalWidth - textSpace
     if barW < 2 then barW = 2 end 
 
-    -- Calculate fill based on the adjusted visual maximum
     local progress = math.min(1, math.max(0, current / visualMax))
     local fillAmount = math.floor(progress * barW)
     
-    -- Ensure at least 1 block of red if there is any value at all
     if current > 0 and fillAmount == 0 then fillAmount = 1 end
 
     term.setCursorPos(x, y)
@@ -62,7 +60,6 @@ local function drawDashboard()
         local b = latestData.coreB
         
         local maxEU = 8000 
-        -- Visual scale adjustment for the heat bar (makes low temps visible)
         local heatVisualMax = 2500 
 
         -- ================= REACTOR 1 (LEFT) =================
@@ -93,12 +90,10 @@ local function drawDashboard()
             local bPct = math.floor(a.fuel.best.percent * 100)
             local wPct = math.floor(a.fuel.worst.percent * 100)
             
-            -- Highest Rod (Bright White / "Bold")
             term.setCursorPos(startX, 11)
             term.setTextColor(colors.white)
             term.write(string.format("Best Rod:  %d%% | %s", bPct, formatTime(a.fuel.best.time)))
             
-            -- Lowest Rod (Dim Gray)
             term.setCursorPos(startX, 12)
             term.setTextColor(colors.gray)
             term.write(string.format("Worst Rod: %d%% | %s", wPct, formatTime(a.fuel.worst.time)))
@@ -136,12 +131,10 @@ local function drawDashboard()
             local bPct = math.floor(b.fuel.best.percent * 100)
             local wPct = math.floor(b.fuel.worst.percent * 100)
             
-            -- Highest Rod (Bright White / "Bold")
             term.setCursorPos(rightX, 11)
             term.setTextColor(colors.white)
             term.write(string.format("Best Rod:  %d%% | %s", bPct, formatTime(b.fuel.best.time)))
             
-            -- Lowest Rod (Dim Gray)
             term.setCursorPos(rightX, 12)
             term.setTextColor(colors.gray)
             term.write(string.format("Worst Rod: %d%% | %s", wPct, formatTime(b.fuel.worst.time)))
@@ -163,18 +156,67 @@ end
 
 drawDashboard()
 
+-- The Internal 1-Second Clock
+local ticker = os.startTimer(1)
+
 -- MULTIPLEXER-SAFE EVENT LOOP
 while running do
     local eventData = { os.pullEvent() }
     local event = eventData[1]
     
-    if event == "modem_message" then
-        local message = eventData[5]
-        if type(message) == "table" and message.type == "reactor_telemetry" then
-            latestData = message
+    -- ==== THE SMOOTH COUNTDOWN TICKER ====
+    if event == "timer" and eventData[2] == ticker then
+        ticker = os.startTimer(1) -- Start the next second
+        
+        if latestData then
+            -- Only tick down if Reactor 1 is active
+            if latestData.coreA.active and latestData.coreA.fuel and latestData.coreA.fuel.best then
+                latestData.coreA.fuel.best.time = math.max(0, latestData.coreA.fuel.best.time - 1)
+                latestData.coreA.fuel.worst.time = math.max(0, latestData.coreA.fuel.worst.time - 1)
+            end
+            
+            -- Only tick down if Reactor 2 is active
+            if latestData.coreB.active and latestData.coreB.fuel and latestData.coreB.fuel.best then
+                latestData.coreB.fuel.best.time = math.max(0, latestData.coreB.fuel.best.time - 1)
+                latestData.coreB.fuel.worst.time = math.max(0, latestData.coreB.fuel.worst.time - 1)
+            end
             drawDashboard()
         end
         
+    -- ==== INCOMING NETWORK DATA ====
+    elseif event == "modem_message" then
+        local message = eventData[5]
+        if type(message) == "table" and message.type == "reactor_telemetry" then
+            
+            if not latestData then
+                latestData = message
+            else
+                -- Smart Merge: Filters out stale 6-second freezes from the reactor
+                local function mergeCore(old, new)
+                    if not new.fuel or not new.fuel.best then return new end
+                    if not old.fuel or not old.fuel.best then return new end
+                    
+                    -- If the time difference is less than 15s, it means it's just normal server lag. 
+                    -- We ignore it and keep our smooth local countdown going!
+                    if math.abs(new.fuel.best.time - old.fuel.best.time) <= 15 then
+                        new.fuel.best.time = old.fuel.best.time
+                    end
+                    if math.abs(new.fuel.worst.time - old.fuel.worst.time) <= 15 then
+                        new.fuel.worst.time = old.fuel.worst.time
+                    end
+                    
+                    return new
+                end
+                
+                message.coreA = mergeCore(latestData.coreA, message.coreA)
+                message.coreB = mergeCore(latestData.coreB, message.coreB)
+                latestData = message
+            end
+            
+            drawDashboard()
+        end
+        
+    -- ==== EXIT HANDLING ====
     elseif event == "mouse_click" or event == "monitor_touch" then
         local mx, my = eventData[3], eventData[4]
         local w, h = getScreen()
