@@ -18,13 +18,14 @@ while true do
     local payload = {
         type = "reactor_telemetry",
         coreA = {
-            active = reactorA.producesEnergy(),
+            -- If it's making power, it's online!
+            active = (reactorA.getEUOutput() > 0),
             heat = reactorA.getHeat(),
             maxHeat = reactorA.getMaxHeat(),
             eu = reactorA.getEUOutput()
         },
         coreB = {
-            active = reactorB.producesEnergy(),
+            active = (reactorB.getEUOutput() > 0),
             heat = reactorB.getHeat(),
             maxHeat = reactorB.getMaxHeat(),
             eu = reactorB.getEUOutput()
