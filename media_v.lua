@@ -115,7 +115,7 @@ local function updateDynamicUI()
     end
     
     -- Vertical Volume Bar positioned right of buttons and title
-    local barHeight = 11  -- rows for vertical bar segments
+    local barHeight = 8  -- rows for vertical bar segments (reduced to fit above progress bar)
     local volFilledRows = math.ceil((volume / 20) * barHeight)
     local volX = getCenteredX(24) + 26  -- to right of title with space
     local volStartY = oy - 4  -- start above title, both dashes visible
