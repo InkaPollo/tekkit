@@ -119,17 +119,17 @@ local function updateDynamicUI()
     local volFilledRows = math.ceil((volume / 20) * barHeight)
     local volX = getCenteredX(24) + 26  -- to right of title with space
     
-    -- Top bracket
-    if oy + 4 <= th then
-        term.setCursorPos(volX, oy + 4)
+    -- Top dash
+    if oy + 1 <= th then
+        term.setCursorPos(volX, oy + 1)
         term.setTextColor(colors.yellow)
-        term.write("[")
+        term.write("-")
     end
     
     -- Vertical bar segments
     for i = 1, barHeight do
-        if oy + 4 + i <= th then
-            term.setCursorPos(volX, oy + 4 + i)
+        if oy + 1 + i <= th then
+            term.setCursorPos(volX, oy + 1 + i)
             term.setTextColor(colors.yellow)
             if i <= volFilledRows then
                 term.write("=")
@@ -139,11 +139,11 @@ local function updateDynamicUI()
         end
     end
     
-    -- Bottom bracket
-    if oy + 4 + barHeight + 1 <= th then
-        term.setCursorPos(volX, oy + 4 + barHeight + 1)
+    -- Bottom dash
+    if oy + 1 + barHeight + 1 <= th then
+        term.setCursorPos(volX, oy + 1 + barHeight + 1)
         term.setTextColor(colors.yellow)
-        term.write("]")
+        term.write("-")
     end
 end
 
@@ -221,12 +221,12 @@ local function handleAction(action)
     elseif action == "rewind" then
         isRewinding = not isRewinding
         isFastForwarding = false
-        pcall(function() tape.seek(-73728) end)
+        pcall(function() tape.seek(-49152) end)
 
     elseif action == "forward" then
         isFastForwarding = not isFastForwarding
         isRewinding = false
-        pcall(function() tape.seek(73728) end)
+        pcall(function() tape.seek(49152) end)
 
     elseif action == "vol_up" then
         volume = math.min(20, volume + 1)
@@ -316,7 +316,7 @@ while running do
             if tape.isReady and tape.isReady() then
                 if isRewinding then 
                     if tape.getPosition() > 0 then
-                        tape.seek(-36864) -- 45x rewind speed
+                        tape.seek(-24576) -- Continuous rewind speed
                         updateDynamicUI() 
                     else
                         isRewinding = false
@@ -324,7 +324,7 @@ while running do
                     end
                 elseif isFastForwarding then 
                     if tape.getPosition() < tape.getSize() then
-                        tape.seek(36864) -- 45x forward speed
+                        tape.seek(24576) -- Continuous forward speed
                         updateDynamicUI() 
                     else
                         isFastForwarding = false
