@@ -1,39 +1,43 @@
 local chamber = peripheral.wrap("ic2:reactor chamber_1")
 
+-- Assuming a standard 10,000 second fuel cycle. 
+-- If Quad cells take 20,000s or 40,000s in your pack, we just change this one number!
+local assumedMaxSeconds = 10000 
+
 local function formatTime(seconds)
+    -- Ensure it doesn't drop below 0 if math gets weird
+    seconds = math.max(0, seconds) 
     local h = math.floor(seconds / 3600)
     local m = math.floor((seconds % 3600) / 60)
     local s = math.floor(seconds % 60)
     return string.format("%dh %02dm %02ds", h, m, s)
 end
 
-print("Testing Fuel Time Extraction...")
+print("Testing live countdown math...")
 local foundFuel = false
 
 for i = 1, chamber.size() do
     local item = chamber.getItemMeta(i)
     
     if item and item.displayName then
-        local nameStr = string.lower(item.displayName)
-        
-        -- Specifically target your EnderPearl quad cells
-        if string.find(nameStr, "enderpearl") then
-            local currentDamage = item.damage or 0
-            local maxDamage = item.maxDamage or 0
+        if string.find(string.lower(item.displayName), "enderpearl") then
             
-            -- If the mod reports max as 0, assume 10000 seconds
-            if maxDamage == 0 then 
-                maxDamage = 10000 
-            end
+            -- Grab the live percentage (e.g., 0.3766)
+            local currentDurability = item.durability or 0
             
-            local timeLeft = maxDamage - currentDamage
+            -- If 0.37 is used, then 1.0 - 0.37 = 0.63 (63% remaining)
+            local percentRemaining = 1.0 - currentDurability
             
-            print("\n--- FOUND FUEL (Slot " .. i .. ") ---")
-            print("Name: " .. item.displayName)
-            print("Raw Damage: " .. currentDamage .. " / " .. maxDamage)
-            print("Time Remaining: " .. formatTime(timeLeft))
+            -- Multiply remaining percentage by total lifespan
+            local secondsRemaining = math.floor(percentRemaining * assumedMaxSeconds)
+            
+            print("\n--- FUEL STATUS (Slot " .. i .. ") ---")
+            print("Raw Durability: " .. currentDurability)
+            print("Percentage:     " .. math.floor(percentRemaining * 100) .. "% Remaining")
+            print("Time Left:      " .. formatTime(secondsRemaining))
             
             foundFuel = true
+            break -- We only need to check the first one we find
         end
     end
 end
