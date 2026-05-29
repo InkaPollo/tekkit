@@ -1,4 +1,5 @@
 -- Redirect to left monitor
+local original_term = term.current()
 local monitor = peripheral.wrap("left")
 if not monitor then
     error("Left monitor not found!")
@@ -52,7 +53,7 @@ elseif input == "3" then
     term.clear()
     
     -- Restore original terminal so split works properly
-    term.restore()
+    term.redirect(original_term)
     
     -- Run split with 3 segments
     shell.run("split", "3")
@@ -74,7 +75,7 @@ elseif input == "4" then
     term.clear()
     
     -- Restore original terminal so split works properly
-    term.restore()
+    term.redirect(original_term)
     
     -- Run split with 4 segments
     shell.run("split", "4")
