@@ -48,6 +48,12 @@ elseif input == "3" then
     os.queueEvent("key", keys.tab)    -- Move to Window 3
     queueProgram("reactor")           -- Window 3: Reactor
     
+    -- Clear monitor before running split
+    term.clear()
+    
+    -- Restore original terminal so split works properly
+    term.restore()
+    
     -- Run split with 3 segments
     shell.run("split", "3")
     
@@ -63,6 +69,12 @@ elseif input == "4" then
     os.queueEvent("key", keys.tab)    -- Move to Window 3
     queueProgram("reactor")           -- Window 3: Reactor
     os.queueEvent("key", keys.tab)    -- Move to Window 4 (ready to type)
+    
+    -- Clear monitor before running split
+    term.clear()
+    
+    -- Restore original terminal so split works properly
+    term.restore()
     
     -- Run split with 4 segments
     shell.run("split", "4")
