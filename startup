@@ -1,5 +1,8 @@
 -- Redirect to left monitor
-local monitor = peripheral.wrap("monitor_0")
+local monitor = peripheral.wrap("left")
+if not monitor then
+    monitor = peripheral.wrap("monitor_0")
+end
 if not monitor then
     monitor = peripheral.wrap("monitor_1")
 end
