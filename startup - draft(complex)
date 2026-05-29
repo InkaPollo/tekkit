@@ -12,5 +12,34 @@ monitor.setTextScale(1)
 term.clear()
 term.setCursorPos(1, 1)
 
--- Run shell on the left monitor
-shell.run("shell")
+local input
+while true do
+    term.clear()
+    term.setCursorPos(1, 1)
+    print("Shell[1], Split 3 ways [3] or Split 4 ways [4]?")
+    input = read()
+    
+    if input == "1" or input == "3" or input == "4" then
+        break
+    else
+        print("read niqqa and try again")
+        sleep(1)
+    end
+end
+
+if input == "1" then
+    -- Option 1: Plain shell with text scale 1
+    monitor.setTextScale(1)
+    shell.run("shell")
+
+elseif input == "3" then
+    -- Option 3: Split 3 ways with programs
+    monitor.setTextScale(0.5)
+    shell.run("split_arg", "3", "clock_split", "iPod", "reactor")
+    
+elseif input == "4" then
+    -- Option 4: Split 4 ways with programs
+    monitor.setTextScale(0.5)
+    shell.run("split_arg", "4", "clock_split", "iPod", "reactor")
+end
+
