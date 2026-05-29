@@ -1,0 +1,162 @@
+-- We use term.getSize() now so it automatically shrinks to fit whatever 
+-- multiplexer segment it is currently assigned to!
+local w, h = term.getSize()
+
+-- Calculate dynamic scaling and center
+local cx = math.floor(w / 2)
+local cy = math.floor(h / 2)
+
+-- Character aspect ratio correction
+local aspect = 1.5
+local radiusY = math.floor(h / 2) - 2
+local radiusX = math.floor(radiusY * aspect)
+
+-- Shrink radius if it overflows the width of the screen
+if cx - radiusX < 2 then
+    radiusX = cx - 2
+    radiusY = math.floor(radiusX / aspect)
+end
+
+local numerals = {
+    "XII", "I", "II", "III", "IV", "V",
+    "VI", "VII", "VIII", "IX", "X", "XI"
+}
+
+-- Button configuration (defined globally so both functions use the same math)
+local btnW = 8
+local btnH = 3
+local marginRight = 2  -- Character spaces away from the right edge
+local marginBottom = 1 -- Character lines away from the bottom edge
+local bx = w - btnW + 1 - marginRight
+local by = h - btnH + 1 - marginBottom
+
+-- Bresenham's line algorithm to draw the hands
+local function drawLine(x1, y1, x2, y2, char, color)
+    term.setTextColor(color)
+    x1, y1 = math.floor(x1 + 0.5), math.floor(y1 + 0.5)
+    x2, y2 = math.floor(x2 + 0.5), math.floor(y2 + 0.5)
+    local dx = math.abs(x2 - x1)
+    local dy = math.abs(y2 - y1)
+    local sx = x1 < x2 and 1 or -1
+    local sy = y1 < y2 and 1 or -1
+    local err = dx - dy
+
+    while true do
+        if x1 >= 1 and x1 <= w and y1 >= 1 and y1 <= h then
+            term.setCursorPos(x1, y1)
+            term.write(char)
+        end
+        if x1 == x2 and y1 == y2 then break end
+        local e2 = 2 * err
+        if e2 > -dy then
+            err = err - dy
+            x1 = x1 + sx
+        end
+        if e2 < dx then
+            err = err + dx
+            y1 = y1 + sy
+        end
+    end
+end
+
+local function drawClock()
+    term.setBackgroundColor(colors.black)
+    term.clear()
+
+    -- 1. Draw the Round Outline
+    term.setTextColor(colors.white)
+    for angle = 0, 359, 2 do
+        local rad = math.rad(angle)
+        local x = cx + radiusX * math.cos(rad)
+        local y = cy + radiusY * math.sin(rad)
+        term.setCursorPos(math.floor(x + 0.5), math.floor(y + 0.5))
+        term.write(".")
+    end
+
+    -- 2. Draw the Roman Numerals (1-12)
+    for i = 0, 11 do
+        local angle = i * 30 - 90
+        local rad = math.rad(angle)
+        local nx = cx + (radiusX - 4) * math.cos(rad)
+        local ny = cy + (radiusY - 2) * math.sin(rad)
+        
+        local text = numerals[i == 0 and 1 or i + 1]
+        nx = nx - math.floor(#text / 2) 
+        
+        term.setCursorPos(math.floor(nx + 0.5), math.floor(ny + 0.5))
+        term.write(text)
+    end
+
+    -- 3. Get Real-World Current Time and apply the 2-hour offset
+    local time = os.date("*t")
+    local offset_hour = time.hour - 2
+    
+    -- Calculate hand angles based on time
+    local h_ang = (offset_hour % 12) * 30 + time.min * 0.5 - 90
+    local m_ang = time.min * 6 + time.sec * 0.1 - 90
+    local s_ang = time.sec * 6 - 90
+
+    -- Calculate dynamic hand lengths
+    local h_lenX, h_lenY = radiusX * 0.45, radiusY * 0.45
+    local m_lenX, m_lenY = radiusX * 0.75, radiusY * 0.75
+    local s_lenX, s_lenY = radiusX * 0.85, radiusY * 0.85
+
+    -- 4. Draw the Hands
+    drawLine(cx, cy, cx + h_lenX * math.cos(math.rad(h_ang)), cy + h_lenY * math.sin(math.rad(h_ang)), "O", colors.white) -- Hour
+    drawLine(cx, cy, cx + m_lenX * math.cos(math.rad(m_ang)), cy + m_lenY * math.sin(math.rad(m_ang)), "+", colors.white) -- Minute
+    drawLine(cx, cy, cx + s_lenX * math.cos(math.rad(s_ang)), cy + s_lenY * math.sin(math.rad(s_ang)), ".", colors.red)   -- Second
+
+    -- 5. Draw the Exit Button with margins
+    term.setBackgroundColor(colors.white)
+    term.setTextColor(colors.black)
+    
+    for y = by, by + btnH - 1 do
+        term.setCursorPos(bx, y)
+        term.write(string.rep(" ", btnW))
+    end
+    
+    term.setCursorPos(bx + 2, by + 1)
+    term.write("Exit")
+    
+    -- Reset colors so terminal acts normally later
+    term.setBackgroundColor(colors.black)
+    term.setTextColor(colors.white)
+end
+
+-- Main Application Loop
+local timer = os.startTimer(1)
+
+while true do
+    drawClock()
+    
+    -- Wait for either 1 second to pass, or someone to tap the screen
+    local event, p1, p2, p3 = os.pullEvent()
+
+    if event == "timer" and p1 == timer then
+        -- 1 second passed, reset the timer to redraw the clock
+        timer = os.startTimer(1)
+        
+    -- Check for both mouse clicks (main computer) and monitor touches (big screen)
+    elseif event == "mouse_click" or event == "monitor_touch" then
+        local mx, my = p2, p3
+        
+        -- Check if touch coordinates fall inside the exit button box
+        if mx >= bx and mx <= bx + btnW - 1 and my >= by and my <= by + btnH - 1 then
+            term.setBackgroundColor(colors.black)
+            term.setTextColor(colors.white)
+            term.clear()
+            term.setCursorPos(1,1)
+            print("Clock terminated.")
+            break -- Breaks the loop and returns to the shell segment
+        end
+        
+    -- Check for 'q' key press to exit
+    elseif event == "char" and p1 == "q" then
+        term.setBackgroundColor(colors.black)
+        term.setTextColor(colors.white)
+        term.clear()
+        term.setCursorPos(1,1)
+        print("Clock terminated.")
+        break -- Breaks the loop and returns to the shell segment
+    end
+end
