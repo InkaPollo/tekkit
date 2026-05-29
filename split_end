@@ -1,0 +1,29 @@
+local args = { ... }
+local segments = tonumber(args[1])
+
+if not segments or segments < 1 or segments > 4 then
+    print("Usage: end <1-4>")
+    print("Example: end 4")
+    return
+end
+
+-- Function to queue an 'exit' command
+local function queueExit()
+    os.queueEvent("char", "e")
+    os.queueEvent("char", "x")
+    os.queueEvent("char", "i")
+    os.queueEvent("char", "t")
+    os.queueEvent("key", keys.enter)
+end
+
+-- Queue commands for each window
+for i = 1, segments do
+    queueExit()
+    
+    -- Tab to the next window (if not the last one)
+    if i < segments then
+        os.queueEvent("key", keys.tab)
+    end
+end
+
+print("Exiting all " .. segments .. " split windows...")
