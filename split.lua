@@ -1,0 +1,143 @@
+local args = { ... }
+local segments = tonumber(args[1])
+
+if not segments or segments < 1 or segments > 4 then
+    print("Usage: split <1-4>")
+    print("Example: split 4")
+    return
+end
+
+-- Compatibility for old and new Lua versions
+local unpack = table.unpack or unpack
+
+local parent = term.current()
+local w, h = parent.getSize()
+
+-- Changed to black so there is no gray background bleeding anywhere
+parent.setBackgroundColor(colors.black)
+parent.clear()
+
+local wData = {}
+-- Swapped to math.floor to prevent pixel-overlap on odd-numbered resolutions
+local midW = math.floor(w / 2)
+local midH = math.floor(h / 2)
+
+-- Helper function to create windows and store their boundaries
+local function addWin(id, x, y, width, height)
+    wData[id] = {
+        win = window.create(parent, x, y, width, height),
+        x1 = x, y1 = y, x2 = x + width - 1, y2 = y + height - 1,
+        co = coroutine.create(function() os.run({}, "rom/programs/shell.lua") end),
+        filter = nil
+    }
+    wData[id].win.setBackgroundColor(colors.black)
+    wData[id].win.setTextColor(colors.white)
+    wData[id].win.clear()
+    wData[id].win.setCursorPos(1,1)
+end
+
+-- 1. Create the Seamless Layouts
+if segments == 1 then
+    addWin(1, 1, 1, w, h)
+elseif segments == 2 then
+    addWin(1, 1, 1, midW, h)
+    addWin(2, midW + 1, 1, w - midW, h)
+elseif segments == 3 then
+    addWin(1, 1, 1, midW, midH)                 -- Top Left
+    addWin(2, midW + 1, 1, w - midW, midH)      -- Top Right
+    addWin(3, 1, midH + 1, w, h - midH)         -- Bottom Long
+elseif segments == 4 then
+    addWin(1, 1, 1, midW, midH)                 -- Top Left
+    addWin(2, midW + 1, 1, w - midW, midH)      -- Top Right
+    addWin(3, 1, midH + 1, midW, h - midH)      -- Bottom Left
+    addWin(4, midW + 1, midH + 1, w - midW, h - midH) -- Bottom Right
+end
+
+local focused = 1
+
+-- 2. The Input Routing Engine
+local function runTerminalManager()
+    local eventData = {}
+    
+    while true do
+        local anyAlive = false
+        for i, data in ipairs(wData) do
+            if coroutine.status(data.co) ~= "dead" then
+                anyAlive = true
+                
+                local evName = eventData[1]
+                local shouldResume = false
+                
+                if data.filter == nil or data.filter == evName or evName == "terminate" then
+                    -- Isolate Keyboard Events
+                    if evName == "key" or evName == "key_up" or evName == "char" or evName == "paste" then
+                        if i == focused then shouldResume = true end
+                    
+                    -- Isolate Mouse Events
+                    elseif evName == "mouse_click" or evName == "mouse_drag" or evName == "mouse_scroll" or evName == "monitor_touch" then
+                        local btn, mx, my = eventData[2], eventData[3], eventData[4]
+                        if mx >= data.x1 and mx <= data.x2 and my >= data.y1 and my <= data.y2 then
+                            local passEvent = { unpack(eventData) }
+                            passEvent[3] = mx - data.x1 + 1
+                            passEvent[4] = my - data.y1 + 1
+                            eventData = passEvent
+                            shouldResume = true
+                        end
+                        
+                    -- Broadcast all other events
+                    else
+                        shouldResume = true
+                    end
+                end
+                
+                if shouldResume then
+                    term.redirect(data.win)
+                    local ok, result = coroutine.resume(data.co, unpack(eventData))
+                    if ok then
+                        data.filter = result
+                    else
+                        data.win.setTextColor(colors.red)
+                        print("Error: " .. tostring(result))
+                    end
+                end
+            end
+        end
+        
+        if not anyAlive then break end
+        
+        -- Restore cursor to focused window
+        if coroutine.status(wData[focused].co) ~= "dead" then
+            term.redirect(wData[focused].win)
+            wData[focused].win.restoreCursor()
+        end
+        
+        eventData = { os.pullEventRaw() }
+        local eName = eventData[1]
+        
+        -- Handle Tab Key
+        if eName == "key" and eventData[2] == keys.tab then
+            focused = focused + 1
+            if focused > segments then focused = 1 end
+            eventData = {} 
+        end
+        
+        -- Handle Click Focus
+        if eName == "mouse_click" or eName == "monitor_touch" then
+            local mx, my = eventData[3], eventData[4]
+            for i, data in ipairs(wData) do
+                if mx >= data.x1 and mx <= data.x2 and my >= data.y1 and my <= data.y2 then
+                    focused = i
+                end
+            end
+        end
+    end
+end
+
+runTerminalManager()
+
+-- Clean up
+term.redirect(parent)
+parent.setBackgroundColor(colors.black)
+parent.setTextColor(colors.white)
+parent.clear()
+parent.setCursorPos(1,1)
