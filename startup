@@ -12,3 +12,7 @@ term.setCursorPos(1, 1)
 
 -- Run shell on the left monitor
 shell.run("shell")
+
+-- Clear any pending events and ensure clean state
+sleep(0.5)
+term.redirect(monitor)
