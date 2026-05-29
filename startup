@@ -12,6 +12,3 @@ term.setCursorPos(1, 1)
 
 -- Run shell on the left monitor
 shell.run("shell")
-
--- Run home_screen after shell
-shell.run("home_screen")
