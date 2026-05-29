@@ -8,5 +8,9 @@ term.redirect(monitor)
 -- Set text scale to 1
 monitor.setTextScale(1)
 
+-- Clear the monitor
+term.clear()
+term.setCursorPos(1, 1)
+
 -- Run shell on the left monitor
 shell.run("shell")
