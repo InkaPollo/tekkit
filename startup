@@ -1,12 +1,6 @@
 -- Redirect to left monitor
 local monitor = peripheral.wrap("left")
 if not monitor then
-    monitor = peripheral.wrap("monitor_0")
-end
-if not monitor then
-    monitor = peripheral.wrap("monitor_1")
-end
-if not monitor then
     error("Left monitor not found!")
 end
 term.redirect(monitor)
@@ -27,13 +21,13 @@ local input = read()
 
 if input == "1" then
     -- Option 1: Plain shell with text scale 1
-    term.setTextScale(1)
+    monitor.setTextScale(1)
     term.clear()
     term.setCursorPos(1, 1)
     
 elseif input == "3" then
     -- Option 3: Split 3 ways with programs
-    term.setTextScale(0.5)
+    monitor.setTextScale(0.5)
     term.clear()
     
     -- Queue events for each window
@@ -48,7 +42,7 @@ elseif input == "3" then
     
 elseif input == "4" then
     -- Option 4: Split 4 ways with programs
-    term.setTextScale(0.5)
+    monitor.setTextScale(0.5)
     term.clear()
     
     -- Queue events for each window
