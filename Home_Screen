@@ -1,18 +1,9 @@
 -- Redirect to left monitor
-local original_term = term.current()
 local monitor = peripheral.wrap("left")
 if not monitor then
     error("Left monitor not found!")
 end
 term.redirect(monitor)
-
--- Helper function to queue a program name as character events followed by Enter
-local function queueProgram(programName)
-    for char in programName:gmatch(".") do
-        os.queueEvent("char", char)
-    end
-    os.queueEvent("key", keys.enter)
-end
 
 -- Display menu and get user input
 local input
@@ -33,50 +24,15 @@ end
 if input == "1" then
     -- Option 1: Plain shell with text scale 1
     monitor.setTextScale(1)
-    term.clear()
-    term.setCursorPos(1, 1)
     shell.run("shell")
 
 elseif input == "3" then
     -- Option 3: Split 3 ways with programs
     monitor.setTextScale(0.5)
-    term.clear()
-    
-    -- Queue events for each window
-    queueProgram("clock_split")       -- Window 1: Clock
-    os.queueEvent("key", keys.tab)    -- Move to Window 2
-    queueProgram("iPod")              -- Window 2: Media Player
-    os.queueEvent("key", keys.tab)    -- Move to Window 3
-    queueProgram("reactor")           -- Window 3: Reactor
-    
-    -- Clear monitor before running split
-    term.clear()
-    
-    -- Restore original terminal so split works properly
-    term.redirect(original_term)
-    
-    -- Run split with 3 segments
-    shell.run("split", "3")
+    shell.run("split_arg", "3", "clock_split", "iPod", "reactor")
     
 elseif input == "4" then
     -- Option 4: Split 4 ways with programs
     monitor.setTextScale(0.5)
-    term.clear()
-    
-    -- Queue events for each window
-    queueProgram("clock_split")       -- Window 1: Clock
-    os.queueEvent("key", keys.tab)    -- Move to Window 2
-    queueProgram("iPod")              -- Window 2: Media Player
-    os.queueEvent("key", keys.tab)    -- Move to Window 3
-    queueProgram("reactor")           -- Window 3: Reactor
-    os.queueEvent("key", keys.tab)    -- Move to Window 4 (ready to type)
-    
-    -- Clear monitor before running split
-    term.clear()
-    
-    -- Restore original terminal so split works properly
-    term.redirect(original_term)
-    
-    -- Run split with 4 segments
-    shell.run("split", "4")
+    shell.run("split_arg", "4", "clock_split", "iPod", "reactor")
 end
