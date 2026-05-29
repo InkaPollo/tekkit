@@ -5,14 +5,8 @@ if not monitor then
 end
 term.redirect(monitor)
 
--- Set text scale and display shell
+-- Set text scale to 1
 monitor.setTextScale(1)
-term.clear()
-term.setCursorPos(1, 1)
 
 -- Run shell on the left monitor
 shell.run("shell")
-
--- Clear any pending events and ensure clean state
-sleep(0.5)
-term.redirect(monitor)
