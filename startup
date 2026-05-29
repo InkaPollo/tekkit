@@ -1,3 +1,13 @@
+-- Redirect to left monitor
+local monitor = peripheral.wrap("monitor_0")
+if not monitor then
+    monitor = peripheral.wrap("monitor_1")
+end
+if not monitor then
+    error("Left monitor not found!")
+end
+term.redirect(monitor)
+
 -- Helper function to queue a program name as character events followed by Enter
 local function queueProgram(programName)
     for char in programName:gmatch(".") do
