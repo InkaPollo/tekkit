@@ -34,12 +34,33 @@ if input == "1" then
 
 elseif input == "3" then
     -- Option 3: Split 3 ways with programs
+    -- Clean up terminal state before calling split_arg
+    term.clear()
+    term.setCursorPos(1, 1)
+    
+    -- Drain any pending events from read()
+    while os.pullEventRaw(0) do end
+    
+    -- Small delay to stabilize system state
+    sleep(0.1)
+    
+    -- Now set text scale and run split_arg
     monitor.setTextScale(0.5)
     shell.run("split_arg", "3", "clock_split", "iPod", "reactor")
     
 elseif input == "4" then
     -- Option 4: Split 4 ways with programs
+    -- Clean up terminal state before calling split_arg
+    term.clear()
+    term.setCursorPos(1, 1)
+    
+    -- Drain any pending events from read()
+    while os.pullEventRaw(0) do end
+    
+    -- Small delay to stabilize system state
+    sleep(0.1)
+    
+    -- Now set text scale and run split_arg
     monitor.setTextScale(0.5)
     shell.run("split_arg", "4", "clock_split", "iPod", "reactor")
 end
-
