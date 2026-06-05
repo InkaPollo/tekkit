@@ -22,6 +22,12 @@ local wData = {}
 local midW = math.floor(w / 2)
 local midH = math.floor(h / 2)
 
+-- Extract program names from arguments (args[2], args[3], args[4])
+local programs = {}
+for i = 2, #args do
+    programs[i - 1] = args[i]
+end
+
 -- Helper function to create windows and store their boundaries
 local function addWin(id, x, y, width, height)
     wData[id] = {
@@ -73,12 +79,6 @@ elseif segments == 4 then
 end
 
 local focused = 1
-
--- Extract program names from arguments (args[2], args[3], args[4])
-local programs = {}
-for i = 2, #args do
-    programs[i - 1] = args[i]
-end
 
 -- 2. The Input Routing Engine
 local function runTerminalManager()
