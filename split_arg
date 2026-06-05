@@ -27,15 +27,7 @@ local function addWin(id, x, y, width, height)
     wData[id] = {
         win = window.create(parent, x, y, width, height),
         x1 = x, y1 = y, x2 = x + width - 1, y2 = y + height - 1,
-        co = coroutine.create(function() 
-            -- Option B: Load shell directly without os.run() to prevent startup recursion
-            local shellChunk, err = loadfile("rom/programs/shell.lua")
-            if shellChunk then
-                shellChunk()
-            else
-                print("Error loading shell: " .. tostring(err))
-            end
-        end),
+        co = coroutine.create(function() os.run({}, "rom/programs/shell.lua") end),
         filter = nil
     }
     wData[id].win.setBackgroundColor(colors.black)
