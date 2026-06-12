@@ -161,8 +161,10 @@ local ticker = os.startTimer(1)
 
 -- MULTIPLEXER-SAFE EVENT LOOP
 while running do
-    local eventData = { os.pullEvent() }
-    local event = eventData[1]
+    local ok, event, p1, p2, p3, p4, p5 = pcall(os.pullEvent)
+    if not ok then break end  -- Graceful exit if terminated
+    
+    local eventData = {event, p1, p2, p3, p4, p5}
     
     -- ==== THE SMOOTH COUNTDOWN TICKER ====
     if event == "timer" and eventData[2] == ticker then
@@ -233,7 +235,7 @@ while running do
             break
         end
         
-    elseif event == "key" and eventData[2] == keys.q then
+    elseif event == "char" and eventData[2] == "q" then
         running = false
         term.setBackgroundColor(colors.black)
         term.setTextColor(colors.white)
