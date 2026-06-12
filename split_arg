@@ -22,35 +22,18 @@ local wData = {}
 local midW = math.floor(w / 2)
 local midH = math.floor(h / 2)
 
--- Extract program names from arguments (args[2], args[3], args[4])
-local programs = {}
-for i = 2, #args do
-    programs[i - 1] = args[i]
-end
-
 -- Helper function to create windows and store their boundaries
 local function addWin(id, x, y, width, height)
     wData[id] = {
         win = window.create(parent, x, y, width, height),
         x1 = x, y1 = y, x2 = x + width - 1, y2 = y + height - 1,
         co = coroutine.create(function() 
-            -- Directly load the program assigned to this segment
-            if programs[id] then
-                local programFile = programs[id]
-                local chunk, err = loadfile(programFile)
-                if chunk then
-                    chunk()
-                else
-                    print("Error loading " .. programFile .. ": " .. tostring(err))
-                end
+            -- Option B: Load shell directly without os.run() to prevent startup recursion
+            local shellChunk, err = loadfile("rom/programs/shell.lua")
+            if shellChunk then
+                shellChunk()
             else
-                -- Fallback to shell if no program assigned
-                local shellChunk, err = loadfile("rom/programs/shell.lua")
-                if shellChunk then
-                    shellChunk()
-                else
-                    print("Error loading shell: " .. tostring(err))
-                end
+                print("Error loading shell: " .. tostring(err))
             end
         end),
         filter = nil
@@ -79,6 +62,31 @@ elseif segments == 4 then
 end
 
 local focused = 1
+
+-- Extract program names from arguments (args[2], args[3], args[4])
+local programs = {}
+for i = 2, #args do
+    programs[i - 1] = args[i]
+end
+
+-- Queue initial programs if provided
+local function queueInitialPrograms()
+    for i = 1, math.min(#programs, segments) do
+        local programName = programs[i]
+        for char in programName:gmatch(".") do
+            os.queueEvent("char", char)
+        end
+        os.queueEvent("key", keys.enter)
+        
+        -- Queue tab if not the last program
+        if i < segments then
+            os.queueEvent("key", keys.tab)
+        end
+    end
+end
+
+-- Queue programs at the start
+queueInitialPrograms()
 
 -- 2. The Input Routing Engine
 local function runTerminalManager()
