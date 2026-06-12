@@ -271,7 +271,11 @@ local function handleKey(key)
     elseif key == keys.right then handleAction("forward")
     elseif key == keys.up then handleAction("vol_up")
     elseif key == keys.down then handleAction("vol_down")
-    elseif key == keys.q then handleAction("quit") end
+    end
+end
+
+local function handleChar(char)
+    if char == "q" then handleAction("quit") end
 end
 
 -- INIT
@@ -284,7 +288,8 @@ local seekTimer = os.startTimer(0.1)
 local lastState = "STOPPED"
 
 while running do
-    local event, p1, p2, p3 = os.pullEventRaw()
+    local ok, event, p1, p2, p3 = pcall(os.pullEvent)
+    if not ok then break end  -- Graceful exit if terminated
     
     if event == "timer" then
         if p1 == updateTimer then
@@ -341,5 +346,8 @@ while running do
     
     elseif event == "key" then
         handleKey(p1)
+    
+    elseif event == "char" and p1 == "q" then
+        handleAction("quit")
     end
 end
