@@ -1,39 +1,18 @@
--- START(left) - Tekkit 2 Startup Script
--- Scans for monitors beside the advanced computer
--- Displays the shell on the monitor with text scale 1
+local flagFile = "/.BOOT_IN_PROGRESS"
 
-local monitor = nil
-local monitorSide = nil
-
--- Check all peripheral sides for monitors
-local sides = {"top", "bottom", "left", "right", "front", "back"}
-
-for _, side in ipairs(sides) do
-    local peripheral_type = peripheral.getType(side)
-    if peripheral_type == "monitor" then
-        monitor = peripheral.wrap(side)
-        monitorSide = side
-        print("Monitor found on side: " .. side)
-        break
-    end
+if fs.exists(flagFile) then
+    return
 end
 
-if not monitor then
-    error("No monitor found!")
-end
+-- Create flag immediately
+local f = fs.open(flagFile, "w")
+f.write("1")
+f.close()
 
--- Set text scale to 1
-monitor.setTextScale(1)
+sleep(1)
+term.clear()
+term.setCursorPos(1, 1)
+shell.run("startup3", "4")
 
--- Clear the monitor
-monitor.clear()
-monitor.setCursorPos(1, 1)
-
--- Redirect terminal to the monitor
-term.redirect(monitor)
-
--- Run the shell
-shell.run("shell")
-
--- Restore original terminal (in case shell exits)
-term.restore()
+-- Clean up after done
+fs.delete(flagFile)
