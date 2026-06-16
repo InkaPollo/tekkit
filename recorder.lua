@@ -248,84 +248,44 @@ local function tapeFile(url)
 	local filename = url:match(".*/(.*%.dfpwm)$") or "unknown_song.dfpwm"
 	local tapeLabel = filename:gsub("%.dfpwm$", "")
 
-	print("Downloading file directly to tape from: " .. url)
+	print("Attempting to download file from: " .. url)
 	print("This may take a moment...")
+	
+	-- Use wget to download the file to temporary storage
+	local wget_success, wget_message = shell.run("wget", url, "/tmp/temp_dl.dfpwm")
 
-	-- Ensure http API is available and correctly namespaced
-	local http
-	if _G.http then
-		http = _G.http
-	elseif peripheral.find("http_api") then
-		http = peripheral.find("http_api")
-	else
-		http = nil
-	end
-
-	if not http then
-		printError("HTTP API not found. Cannot download directly.")
-		printError("Ensure you are running on a ComputerCraft version with HTTP support and that it's enabled.")
-		return
-	end
-
-	local success, response = http.fetch(url)
-
-	if success then
-		if response.success then
-			print("Download stream opened. Writing to tape...")
-	local bytesWritten = 0
-	local _, y = term.getCursorPos()
-			local fileSize = tonumber(response.headers["content-length"] or 0)
-
-			tape.stop()
-			tape.seek(-tape.getSize()) -- Rewind to beginning
-			tape.stop() -- Ensure it's stopped
-
-			local buffer = ""
-			local bufferSize = 8192 -- Match the block size from writeTapeModified
-
-			while true do
-				local chunk = response.read(bufferSize)
-				if not chunk then break end
-
-				-- Write chunk directly to tape
-				for i = 1, #chunk do
-					tape.write(string.byte(chunk, i))
-		bytesWritten = bytesWritten + 1
-
-					-- Progress indicator
-				if bytesWritten % 1024 == 0 or (fileSize > 0 and bytesWritten >= fileSize) then
-			term.setCursorPos(1, y)
-					local progress = ""
-					if fileSize > 0 then
-						progress = string.format("%.1f%%", (bytesWritten / fileSize) * 100)
-	else
-						progress = string.format("%d KB", math.floor(bytesWritten / 1024))
-	end
-					term.write("Streamed " .. progress .. " to tape...")
-					sleep(0)
-	end
-end
-			end
-
-			tape.stop() -- Stop after writing
-			tape.seek(-tape.getSize()) -- Rewind to end
+	if wget_success then
+		-- Check if the file exists and has content
+		if fs.exists("/tmp/temp_dl.dfpwm") and fs.getSize("/tmp/temp_dl.dfpwm") > 0 then
+			print("Download appears successful. Writing to tape...")
+			-- Now, use the existing writeTapeModified function
+			writeTapeModified("/tmp/temp_dl.dfpwm")
+			shell.run("rm", "/tmp/temp_dl.dfpwm") -- Clean up temporary file
+			tape.seek(-tape.getSize()) -- Rewind tape after writing
 
 			if tape.setLabel then
 				tape.setLabel(tapeLabel)
-				print("\nTape labeled: '" .. tapeLabel .. "'")
+				print("Tape labeled: '" .. tapeLabel .. "'")
 			else
-				print("\nWarning: Tape drive does not support labeling. (Computronics v1.6.5+ required)")
+				print("Warning: Tape drive does not support labeling. (Computronics v1.6.5+ required)")
 			end
-			print("Stream complete. Tape rewound. Done!")
+			print("Tape rewound. Done!")
 		else
-			printError("Download failed: Server responded with error: " .. tostring(response.status))
-			printError("Check URL and network connection.")
+			-- File downloaded but is empty or missing after wget claimed success
+			printError("Download failed: wget completed, but the downloaded file is empty or missing.")
+			printError("Check the URL is a direct .dfpwm link and ensure your computer has enough free space.")
+			print("Free space on computer: " .. fs.getFreeSpace(".") .. " bytes.")
+			print("If space is low, try deleting files or use a computer with more storage.")
 		end
 	else
-		printError("Download failed: Could not open URL.")
-		printError("Check URL and network connection. Ensure HTTP API is available.")
+		-- wget itself failed
+		printError("Download failed: wget command returned an error.")
+		printError("Error message from wget: " .. tostring(wget_message or "unknown error"))
+		printError("Possible reasons: Invalid URL, network issue, or 'wget' command not found.")
+		print("Free space on computer: " .. fs.getFreeSpace(".") .. " bytes.")
 	end
 end
+
 
 -- Function to clear the tape
 local function clearTape()
@@ -386,4 +346,3 @@ elseif programArgs[1] == "clear" then
 else
 	helpText()
 end
-
