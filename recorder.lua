@@ -14,7 +14,7 @@ local function helpTextDl()
 	print("Usage:")
 	print(" - 'recorder dl' to display this help text")
 	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
-	print("directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
+	directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
 end
 
 --TAPE LOOP CONTENT------------
@@ -285,6 +285,12 @@ local function clearTape()
 	tape.stop()
 	tape.seek(-tape.getSize()) -- Rewind to the very beginning
 	
+	-- Reset the label
+	if tape.setLabel then
+		tape.setLabel(nil)
+		print("Tape label cleared.")
+	end
+	
 	local tapeSize = tape.getSize()
 	local bytesWritten = 0
 	local _, y = term.getCursorPos()
@@ -329,3 +335,4 @@ elseif arg1 == "clear" then
 else
     helpText()
 end
+
