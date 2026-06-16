@@ -1,57 +1,35 @@
 local programArgs = { ... }
 
---tape check (Initial check removed, moved to individual functions)
--- local tape = peripheral.find("tape_drive")
--- if not tape then
---   print("This program requires a tape drive to run.")
---   return
--- end
-
 local function helpText()
 	print("Usage:")
 	print(" - 'recorder' to display this help text")
 	print(" - 'recorder loop' to loop a cassette tape")
-  	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
-  	print(" - 'recorder file [url]' to write a single .dfpwm file to tape and label it")
-  	print(" - 'recorder clear' to clear the content of the tape")
-  	print(" - 'recorder dl' to display full download utility help text")
-  	return
+	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
+	print(" - 'recorder file [url]' to write a single .dfpwm file to tape and label it")
+	print(" - 'recorder clear' to clear the content of the tape")
+	print(" - 'recorder dl' to display full download utility help text")
 end
 
 local function helpTextDl()
 	print("Usage:")
-  	print(" - 'recorder dl' to display this help text")
-  	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
-  	print("directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
+	print(" - 'recorder dl' to display this help text")
+	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
+	print("directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
 end
-
---add helpText for loop util, when more features are added.
-
-
-
-
 
 --TAPE LOOP CONTENT------------
 --Program for looping tracks
 
--- (Initial tape check here also removed, moved to looper function)
--- local tape = peripheral.find("tape_drive")
--- if not tape then
--- -- 	print("This program requires a tape drive to run.")
--- -- 	return
--- end
-
 --Returns true if position 1 away is zero
 local function seekNCheck()
-	--tape check (moved here)
+	--tape check
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 	  print("This program requires a tape drive to run.")
 	  return
 	end
-	--seek 1 and check
+	
 	tape.seek(1)
-	print("Seeking 1...")
 	if tape.read() == 0 then
 		return true
 	else return false
@@ -60,7 +38,7 @@ end
 
 --Checks multiple bits into distance to make sure it is actual end of track, and not just a quiet(?) part
 local function seekNCheckMultiple()
-	--tape check (moved here)
+	--tape check
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 	  print("This program requires a tape drive to run.")
@@ -76,7 +54,7 @@ end
 	
 -- this could be made into a more efficient algo?
 local function findTapeEnd( ... )
-	--tape check (moved here)
+	--tape check
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 	  print("This program requires a tape drive to run.")
@@ -96,22 +74,19 @@ local function findTapeEnd( ... )
 		os.queueEvent("randomEvent") -- timeout
 		os.pullEvent()				 -- prevention
 
-
 		tape.seek(accuracy) --seek forward one unit (One takes too long, bigger values not as accurate)
 		if tape.read() ~= 0 then --if current location is not a zero
 			runningEnd = i*accuracy --Update Running runningEnd var. i * accuracy gets current location in tape
 			print("End Candidate: " .. runningEnd)
 		elseif seekNCheckMultiple() then --check a few spots away to see if zero as well
 			return runningEnd
-		--else return runningEnd --otherwise, (if 0) return runningEnd
 		end --end if
 	end
-
 end
 
 --Main Function
 local function looper( ... )
-	--tape check (moved here)
+	--tape check
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 	  print("This program requires a tape drive to run.")
@@ -137,81 +112,74 @@ local function looper( ... )
 		sleep(endLoc/6000)
 		print("Song Ended, Restarting...")
 	end
-
-	--play tape until 
 end
 
 --END TAPE LOOP CONTENT---------------------------------
 
-
-
-
-
 --START TAPE DL CONTENT--------------------------------
---Credit to the writers of Computronics for the bulk of wrtieTapeModified() function, see README for more info.
+--Credit to the writers of Computronics for the bulk of writeTapeModified() function, see README for more info.
 local function writeTapeModified(relPath)
 	--check for tape drive
 	local tape = peripheral.find("tape_drive")
 	if not tape then
-		print("This program requires a tape drive to run.")		return
+		print("This program requires a tape drive to run.")
+		return
 	end
-  local file, msg, _, y, success
-  local block = 8192 --How much to read at a time
+	local file, msg, _, y, success
+	local block = 8192 --How much to read at a time
 
-  -- if not confirm("Are you sure you want to write to this tape?") then return end
-  tape.stop()
-  tape.seek(-tape.getSize()) -- RE-ENABLED: Ensure writing always starts from the beginning
-  tape.stop() --Just making sure
+	tape.stop()
+	tape.seek(-tape.getSize()) -- RE-ENABLED: Ensure writing always starts from the beginning
+	tape.stop() --Just making sure
 
-  local path = shell.resolve(relPath)
-  local bytery = 0 --For the progress indicator
-  local filesize = fs.getSize(path)
-  print("Path: " .. path)
-  file, msg = fs.open(path, "rb")
-  if not fs.exists(path) then msg = "file not found" end
-  if not file then
-    printError("Failed to open file " .. relPath .. (msg and ": " .. tostring(msg)) or "")
-    return
-  end
+	local path = shell.resolve(relPath)
+	local bytery = 0 --For the progress indicator
+	local filesize = fs.getSize(path)
+	print("Path: " .. path)
+	file, msg = fs.open(path, "rb")
+	if not fs.exists(path) then msg = "file not found" end
+	if not file then
+		printError("Failed to open file " .. relPath .. (msg and ": " .. tostring(msg) or ""))
+		return
+	end
 
   print("Writing...")
 
   _, y = term.getCursorPos()
 
-  if filesize > tape.getSize() then
-    term.setCursorPos(1, y)
-    printError("Error: File is too large for tape, shortening file")
-    _, y = term.getCursorPos()
-    filesize = tape.getSize()
-  end
+	if filesize > tape.getSize() then
+		term.setCursorPos(1, y)
+		printError("Error: File is too large for tape, shortening file")
+		_, y = term.getCursorPos()
+		filesize = tape.getSize()
+	end
 
-  repeat
-    local bytes = {}
-    for i = 1, block do
-      local byte = file.read()
-      if not byte then break end
-      bytes[#bytes + 1] = byte
-    end
-    if #bytes > 0 then
-      if not tape.isReady() then
-        io.stderr:write("\nError: Tape was removed during writing.\n")
-        file.close()
-        return
-      end
-      term.setCursorPos(1, y)
-      bytery = bytery + #bytes
-      term.write("Read " .. tostring(math.min(bytery, filesize)) .. " of " .. tostring(filesize) .. " bytes...")
-      for i = 1, #bytes do
-        tape.write(bytes[i])
-      end
-      sleep(0)
-    end
-  until not bytes or #bytes <= 0 or bytery > filesize
-  file.close()
-  tape.stop()
-  --tape.seek(-tape.getSize()) -- This is no longer needed here as we rewind at the start
-  tape.stop() --Just making sure
-  print("\nDone.")
+	repeat
+		local bytes = {}
+		for i = 1, block do
+			local byte = file.read()
+			if not byte then break end
+			bytes[#bytes + 1] = byte
+		end
+		if #bytes > 0 then
+			if not tape.isReady() then
+				io.stderr:write("\nError: Tape was removed during writing.\n")
+				file.close()
+				return
+			end
+			term.setCursorPos(1, y)
+			bytery = bytery + #bytes
+			term.write("Read " .. tostring(math.min(bytery, filesize)) .. " of " .. tostring(filesize) .. " bytes...")
+			for i = 1, #bytes do
+				tape.write(bytes[i])
+			end
+			sleep(0)
+		end
+	until not bytes or #bytes <= 0 or bytery > filesize
+	file.close()
+	tape.stop()
+	tape.stop() --Just making sure
+	print("\nDone.")
 end
 
 local function tapeDl(numParts,url)
@@ -226,10 +194,20 @@ local function tapeDl(numParts,url)
 
 	--Main Loop
 	while i <= tonumber(numParts) do
-		shell.run("rm", "/tmp/temp_dl.dfpwm") -- Ensure temp file is removed before download
-		shell.run("wget", "" .. url .. i .. ".dfpwm", "/tmp/temp_dl.dfpwm") --wget file
-		writeTapeModified("/tmp/temp_dl.dfpwm") --write to tape
-		shell.run("rm", "/tmp/temp_dl.dfpwm") -- rm temp file after use
+		-- Ensure temp file is removed before download, using a specific name to avoid conflicts
+		local tempFilePath = "/tmp/temp_dl_chunk_" .. i .. ".dfpwm"
+		if fs.exists(tempFilePath) then
+			shell.run("rm", tempFilePath)
+		end
+		shell.run("wget", "" .. url .. i .. ".dfpwm", tempFilePath) --wget file
+		
+		-- Check if wget actually created the file and it has size
+		if fs.exists(tempFilePath) and fs.getSize(tempFilePath) > 0 then
+			writeTapeModified(tempFilePath) --write to tape
+			shell.run("rm", tempFilePath) -- rm temp file after use
+		else
+			printError("Failed to download chunk " .. i .. ". Skipping.")
+		end
 		i = i + 1 -- i++
 	end
 	tape.seek(-tape.getSize()) --rewind tape
@@ -252,15 +230,24 @@ local function tapeFile(url)
 	print("This may take a moment...")
 	
 	-- Use wget to download the file to temporary storage
-	local wget_success, wget_message = shell.run("wget", url, "/tmp/temp_dl.dfpwm")
+	-- Use a filename that includes the original filename to avoid conflicts
+	local tempFilePath = "/tmp/temp_dl_" .. filename 
+
+	-- Clean up existing temp file first if it exists to prevent "file already exists" errors
+	if fs.exists(tempFilePath) then
+		print("Removing existing temporary file: " .. tempFilePath)
+		shell.run("rm", tempFilePath)
+	end
+
+	local wget_success, wget_message = shell.run("wget", url, tempFilePath)
 
 	if wget_success then
 		-- Check if the file exists and has content
-		if fs.exists("/tmp/temp_dl.dfpwm") and fs.getSize("/tmp/temp_dl.dfpwm") > 0 then
+		if fs.exists(tempFilePath) and fs.getSize(tempFilePath) > 0 then
 			print("Download appears successful. Writing to tape...")
 			-- Now, use the existing writeTapeModified function
-			writeTapeModified("/tmp/temp_dl.dfpwm")
-			shell.run("rm", "/tmp/temp_dl.dfpwm") -- Clean up temporary file
+			writeTapeModified(tempFilePath)
+			shell.run("rm", tempFilePath) -- Clean up temporary file
 			tape.seek(-tape.getSize()) -- Rewind tape after writing
 
 			if tape.setLabel then
@@ -285,7 +272,6 @@ local function tapeFile(url)
 		print("Free space on computer: " .. fs.getFreeSpace(".") .. " bytes.")
 	end
 end
-
 
 -- Function to clear the tape
 local function clearTape()
@@ -319,30 +305,27 @@ local function clearTape()
 			return
 		end
 	end
-
-	tape.seek(-tape.getSize()) -- Rewind again for a clean start
-	print("\nEntire tape cleared and rewound. Done!")
+	print("\nDone.")
 end
 
-
---END TAPE LOOP CONTENT---------------------------------
-if programArgs[1] == "loop" then
-	looper()
-elseif programArgs[1] == "file" then
-	if programArgs[2] ~= nil then
-		tapeFile(programArgs[2])
-	else
-		print("Usage: recorder file [url] - Please provide a URL to the .dfpwm file.")
-		print("Example: recorder file https://raw.githubusercontent.com/User/Repo/main/MyCoolSong.dfpwm")
-	end
-elseif programArgs[1] == "dl" then
-	if programArgs[2] ~= nil then
-		print("running tapeDl")
-		tapeDl(programArgs[2],programArgs[3])
-	else helpTextDl()
-	end
-elseif programArgs[1] == "clear" then
-	clearTape()
+-- MAIN ENTRY
+local arg1 = programArgs[1]
+if arg1 == "loop" then
+    looper()
+elseif arg1 == "dl" then
+    if not programArgs[2] then
+        helpTextDl()
+    else
+        tapeDl(programArgs[2], programArgs[3])
+    end
+elseif arg1 == "file" then
+    if not programArgs[2] then
+        print("Usage: recorder file [url]")
+    else
+        tapeFile(programArgs[2])
+    end
+elseif arg1 == "clear" then
+    clearTape()
 else
-	helpText()
+    helpText()
 end
