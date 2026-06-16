@@ -277,33 +277,43 @@ end
 
 -- Function to clear the tape
 local function clearTape()
-	--tape check (moved here)
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
 		return
 	end
 
-	print("Clearing tape content...")
+	print("Clearing entire tape content. This may take a while for large tapes...")
 	tape.stop()
 	tape.seek(-tape.getSize()) -- Rewind to the very beginning
 	
-	-- Write a segment of silent data (zeros) to clear the start
-	-- A few thousand zeros should be enough to overwrite any initial static
-	for i = 1, 4096 do -- Writing 4096 zeros should cover about 0.09 seconds at 44.1kHz
-		tape.write(0)
-	end
+	local tapeSize = tape.getSize()
+	local bytesWritten = 0
+	local _, y = term.getCursorPos()
+
+	for i = 1, tapeSize do
+		tape.write(0) -- Write a single zero-byte (silence)
+		bytesWritten = bytesWritten + 1
+
+		-- Update progress indicator
+		if i % 1024 == 0 or i == tapeSize then -- Update every 1KB or at the end
+			term.setCursorPos(1, y)
+			term.write("Cleared " .. tostring(math.floor(bytesWritten / 1024)) .. "KB of " .. tostring(math.floor(tapeSize / 1024)) .. "KB")
+			sleep(0) -- Yield to prevent timeout
+		end
 	
+		if not tape.isReady() then
+			io.stderr:write("\nError: Tape was removed during clearing.\n")
+			return
+		end
+	end
+
 	tape.seek(-tape.getSize()) -- Rewind again for a clean start
-	print("Tape cleared and rewound.")
+	print("\nEntire tape cleared and rewound. Done!")
 end
 
 
 --END TAPE LOOP CONTENT---------------------------------
-
-
-
-
 if programArgs[1] == "loop" then
 	looper()
 elseif programArgs[1] == "file" then
@@ -324,3 +334,4 @@ elseif programArgs[1] == "clear" then
 else
 	helpText()
 end
+
