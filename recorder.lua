@@ -226,9 +226,10 @@ local function tapeDl(numParts,url)
 
 	--Main Loop
 	while i <= tonumber(numParts) do
+		shell.run("rm", "/tmp/temp_dl.dfpwm") -- Ensure temp file is removed before download
 		shell.run("wget", "" .. url .. i .. ".dfpwm", "/tmp/temp_dl.dfpwm") --wget file
 		writeTapeModified("/tmp/temp_dl.dfpwm") --write to tape
-		shell.run("rm", "/tmp/temp_dl.dfpwm") -- rm temp file
+		shell.run("rm", "/tmp/temp_dl.dfpwm") -- rm temp file after use
 		i = i + 1 -- i++
 	end
 	tape.seek(-tape.getSize()) --rewind tape
@@ -247,30 +248,67 @@ local function tapeFile(url)
 	local filename = url:match(".*/(.*%.dfpwm)$") or "unknown_song.dfpwm"
 	local tapeLabel = filename:gsub("%.dfpwm$", "")
 
-	print("Downloading file from: " .. url)
+	print("Downloading file directly to tape from: " .. url)
 	print("This may take a moment...")
-	local success, message = shell.run("wget", url, "/tmp/temp_dl.dfpwm")
 
+	-- Instead of wget, we'll use http.fetch and pipe directly to tape.write
+	-- This requires the http API which is standard in CC:Tweaked
+	local success, response = http.fetch(url)
 	if success then
-		if fs.exists("/tmp/temp_dl.dfpwm") and fs.getSize("/tmp/temp_dl.dfpwm") > 0 then
-			print("Download complete. Writing to tape...")
-			writeTapeModified("/tmp/temp_dl.dfpwm")
-			shell.run("rm", "/tmp/temp_dl.dfpwm")
-			tape.seek(-tape.getSize())
+		if response.success then
+			print("Download stream opened. Writing to tape...")
+	local bytesWritten = 0
+	local _, y = term.getCursorPos()
+			local fileSize = tonumber(response.headers["content-length"] or 0)
+
+			tape.stop()
+			tape.seek(-tape.getSize()) -- Rewind to beginning
+			tape.stop() -- Ensure it's stopped
+
+			local buffer = ""
+			local bufferSize = 8192 -- Match the block size from writeTapeModified
+
+			while true do
+				local chunk = response.read(bufferSize)
+				if not chunk then break end
+
+				-- Write chunk directly to tape
+				for i = 1, #chunk do
+					tape.write(string.byte(chunk, i))
+		bytesWritten = bytesWritten + 1
+
+					-- Progress indicator
+				if bytesWritten % 1024 == 0 or (fileSize > 0 and bytesWritten >= fileSize) then
+			term.setCursorPos(1, y)
+					local progress = ""
+					if fileSize > 0 then
+						progress = string.format("%.1f%%", (bytesWritten / fileSize) * 100)
+	else
+						progress = string.format("%d KB", math.floor(bytesWritten / 1024))
+	end
+					term.write("Streamed " .. progress .. " to tape...")
+					sleep(0)
+	end
+end
+			end
+
+			tape.stop() -- Stop after writing
+			tape.seek(-tape.getSize()) -- Rewind to end
 
 			if tape.setLabel then
 				tape.setLabel(tapeLabel)
-				print("Tape labeled: '" .. tapeLabel .. "'")
+				print("\nTape labeled: '" .. tapeLabel .. "'")
 			else
-				print("Warning: Tape drive does not support labeling. (Computronics v1.6.5+ required)")
+				print("\nWarning: Tape drive does not support labeling. (Computronics v1.6.5+ required)")
 			end
-			print("Tape rewound. Done!")
+			print("Stream complete. Tape rewound. Done!")
 		else
-			printError("Download failed: Downloaded file is empty or missing. Check URL and computer disk space. (Try 'df -h')")
+			printError("Download failed: Server responded with error: " .. tostring(response.status))
+			printError("Check URL and network connection.")
 		end
 	else
-		printError("Download failed: " .. tostring(message or "unknown wget error"))
-		printError("Consider checking computer disk space with 'df -h' and verify the URL is a direct .dfpwm link.")
+		printError("Download failed: Could not open URL.")
+		printError("Check URL and network connection. Ensure http API is available.")
 	end
 end
 
