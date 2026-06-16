@@ -150,18 +150,17 @@ end
 --START TAPE DL CONTENT--------------------------------
 --Credit to the writers of Computronics for the bulk of wrtieTapeModified() function, see README for more info.
 local function writeTapeModified(relPath)
-	--tape check (moved here)
+	--check for tape drive
 	local tape = peripheral.find("tape_drive")
 	if not tape then
-		print("This program requires a tape drive to run.")
-		return
+		print("This program requires a tape drive to run.")		return
 	end
   local file, msg, _, y, success
   local block = 8192 --How much to read at a time
 
   -- if not confirm("Are you sure you want to write to this tape?") then return end
   tape.stop()
-  --tape.seek(-tape.getSize()) --MODIFIED this part has been removed to stop seeking back to start between writes
+  tape.seek(-tape.getSize()) -- RE-ENABLED: Ensure writing always starts from the beginning
   tape.stop() --Just making sure
 
   local path = shell.resolve(relPath)
@@ -210,13 +209,13 @@ local function writeTapeModified(relPath)
   until not bytes or #bytes <= 0 or bytery > filesize
   file.close()
   tape.stop()
-  --tape.seek(-tape.getSize()) --MODIFIED same reaosn as above...
+  --tape.seek(-tape.getSize()) -- This is no longer needed here as we rewind at the start
   tape.stop() --Just making sure
   print("\nDone.")
 end
 
 local function tapeDl(numParts,url)
-	--tape check (moved here)
+	--check for tape drive.
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
@@ -238,7 +237,6 @@ end
 
 --ADDITIONAL: Write single file from URL and label tape
 local function tapeFile(url)
-	--tape check (moved here)
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
@@ -254,7 +252,7 @@ local function tapeFile(url)
 	local success, message = shell.run("wget", url, "/tmp/temp_dl.dfpwm")
 
 	if success then
-		if fs.exists("/tmp/temp_dl.dfpwm") then
+		if fs.exists("/tmp/temp_dl.dfpwm") and fs.getSize("/tmp/temp_dl.dfpwm") > 0 then
 			print("Download complete. Writing to tape...")
 			writeTapeModified("/tmp/temp_dl.dfpwm")
 			shell.run("rm", "/tmp/temp_dl.dfpwm")
@@ -268,10 +266,11 @@ local function tapeFile(url)
 			end
 			print("Tape rewound. Done!")
 		else
-			printError("Download failed: Temporary file not found after wget.")
+			printError("Download failed: Downloaded file is empty or missing. Check URL and computer disk space. (Try 'df -h')")
 		end
 	else
-		printError("Download failed: " .. tostring(message or "unknown error"))
+		printError("Download failed: " .. tostring(message or "unknown wget error"))
+		printError("Consider checking computer disk space with 'df -h' and verify the URL is a direct .dfpwm link.")
 	end
 end
 
