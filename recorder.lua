@@ -287,7 +287,7 @@ local function clearTape()
 	
 	-- Reset the label
 	if tape.setLabel then
-		tape.setLabel(nil)
+		tape.setLabel("")
 		print("Tape label cleared.")
 	end
 	
