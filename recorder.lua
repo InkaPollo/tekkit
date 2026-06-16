@@ -1,33 +1,18 @@
---[[ A Utility Program for Computronics Cassette Tapes.
-Provides:
-	- automatic tape writing from web location
-	- automatic tape looping
-	- More in future updates
-]]
-
-local args = { ... }
-
---tape check
-local tape = peripheral.find("tape_drive")
-if not tape then
-  print("This program requires a tape drive to run.")
-  return
-end
-
 local function helpText()
 	print("Usage:")
-	print(" - 'tape-util' to display this help text")
-	print(" - 'tape-util loop' to loop a cassette tape")
-  	print(" - 'tape-util dl [num files] [web dir]' to write web directory to tape")
-  	print(" - 'tape-util file [url]' to write a single .dfpwm file to tape and label it")
-  	print(" - 'tape-util dl' to display full download utility help text")
+	print(" - 'recorder' to display this help text")
+	print(" - 'recorder loop' to loop a cassette tape")
+  	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
+  	print(" - 'recorder file [url]' to write a single .dfpwm file to tape and label it")
+  	print(" - 'recorder clear' to clear the content of the tape")
+  	print(" - 'recorder dl' to display full download utility help text")
   	return
 end
 
 local function helpTextDl()
 	print("Usage:")
-  	print(" - 'tape-util dl' to display this help text")
-  	print(" - 'tape-util dl [num files] [web dir]' to write web directory to tape")
+  	print(" - 'recorder dl' to display this help text")
+  	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
   	print("directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
 end
 
@@ -249,6 +234,29 @@ local function tapeFile(url)
 	end
 end
 
+-- Function to clear the tape
+local function clearTape()
+	local tape = peripheral.find("tape_drive")
+	if not tape then
+		print("This program requires a tape drive to run.")
+		return
+	end
+
+	print("Clearing tape content...")
+	tape.stop()
+	tape.seek(-tape.getSize()) -- Rewind to the very beginning
+	
+	-- Write a segment of silent data (zeros) to clear the start
+	-- A few thousand zeros should be enough to overwrite any initial static
+	for i = 1, 4096 do -- Writing 4096 zeros should cover about 0.09 seconds at 44.1kHz
+		tape.write(0)
+	end
+	
+	tape.seek(-tape.getSize()) -- Rewind again for a clean start
+	print("Tape cleared and rewound.")
+end
+
+
 --END TAPE LOOP CONTENT---------------------------------
 
 
@@ -260,8 +268,8 @@ elseif args[1] == "file" then
 	if args[2] ~= nil then
 		tapeFile(args[2])
 	else
-		print("Usage: tape-util file [url] - Please provide a URL to the .dfpwm file.")
-		print("Example: tape-util file https://raw.githubusercontent.com/User/Repo/main/MyCoolSong.dfpwm")
+		print("Usage: recorder file [url] - Please provide a URL to the .dfpwm file.")
+		print("Example: recorder file https://raw.githubusercontent.com/User/Repo/main/MyCoolSong.dfpwm")
 	end
 elseif args[1] == "dl" then
 	if args[2] ~= nil then
@@ -269,6 +277,8 @@ elseif args[1] == "dl" then
 		tapeDl(args[2],args[3])
 	else helpTextDl()
 	end
+elseif args[1] == "clear" then
+	clearTape()
 else
 	helpText()
 end
@@ -282,4 +292,3 @@ looper(), could do with some cleaner prints. can screen be cleared?
 looper(), needs accuracy argument! will be very slow on larger cassettes to find length
 
 ]]
-
