@@ -253,7 +253,20 @@ local function tapeFile(url)
 
 	-- Instead of wget, we'll use http.fetch and pipe directly to tape.write
 	-- This requires the http API which is standard in CC:Tweaked
+	-- Ensure http API is available and correctly namespaced
+	local http = peripheral.find("http_api") or nil -- Attempt to find http API, or use global if available
+	if not http then
+		http = _G.http -- Fallback to global http if peripheral lookup fails
+	end
+
+	if not http then
+		printError("HTTP API not found. Cannot download directly.")
+		printError("Ensure you are running on a ComputerCraft version with HTTP support.")
+		return
+	end
+
 	local success, response = http.fetch(url)
+
 	if success then
 		if response.success then
 			print("Download stream opened. Writing to tape...")
@@ -308,7 +321,7 @@ end
 		end
 	else
 		printError("Download failed: Could not open URL.")
-		printError("Check URL and network connection. Ensure http API is available.")
+		printError("Check URL and network connection. Ensure HTTP API is available.")
 	end
 end
 
