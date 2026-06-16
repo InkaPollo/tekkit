@@ -1,3 +1,12 @@
+local programArgs = { ... }
+
+--tape check (Initial check removed, moved to individual functions)
+-- local tape = peripheral.find("tape_drive")
+-- if not tape then
+--   print("This program requires a tape drive to run.")
+--   return
+-- end
+
 local function helpText()
 	print("Usage:")
 	print(" - 'recorder' to display this help text")
@@ -25,14 +34,21 @@ end
 --TAPE LOOP CONTENT------------
 --Program for looping tracks
 
-local tape = peripheral.find("tape_drive")
-if not tape then
--- 	print("This program requires a tape drive to run.")
--- 	return
-end
+-- (Initial tape check here also removed, moved to looper function)
+-- local tape = peripheral.find("tape_drive")
+-- if not tape then
+-- -- 	print("This program requires a tape drive to run.")
+-- -- 	return
+-- end
 
 --Returns true if position 1 away is zero
 local function seekNCheck()
+	--tape check (moved here)
+	local tape = peripheral.find("tape_drive")
+	if not tape then
+	  print("This program requires a tape drive to run.")
+	  return
+	end
 	--seek 1 and check
 	tape.seek(1)
 	print("Seeking 1...")
@@ -44,6 +60,12 @@ end
 
 --Checks multiple bits into distance to make sure it is actual end of track, and not just a quiet(?) part
 local function seekNCheckMultiple()
+	--tape check (moved here)
+	local tape = peripheral.find("tape_drive")
+	if not tape then
+	  print("This program requires a tape drive to run.")
+	  return
+	end
 	for i=1,10 do
 		if seekNCheck() == false then
 			return false
@@ -54,6 +76,12 @@ end
 	
 -- this could be made into a more efficient algo?
 local function findTapeEnd( ... )
+	--tape check (moved here)
+	local tape = peripheral.find("tape_drive")
+	if not tape then
+	  print("This program requires a tape drive to run.")
+	  return
+	end
 
 	local accuracy = 100
 	print("Using accuracy of " .. accuracy)
@@ -83,10 +111,22 @@ end
 
 --Main Function
 local function looper( ... )
+	--tape check (moved here)
+	local tape = peripheral.find("tape_drive")
+	if not tape then
+	  print("This program requires a tape drive to run.")
+	  return
+	end
 	print("Initializing...")
 	--find tape end
 	print("Locating end of song...")
 	local endLoc = findTapeEnd()
+	
+	if not endLoc then -- Handle case where findTapeEnd might return nil due to error
+		printError("Could not find end of song. Aborting loop.")
+		return
+	end
+
 	print("End of song at position " .. endLoc .. ", or " .. endLoc/6000 .. " seconds in\n")
 
 	print("Starting Loop! Hold Ctrl+T to Terminate")
@@ -110,7 +150,7 @@ end
 --START TAPE DL CONTENT--------------------------------
 --Credit to the writers of Computronics for the bulk of wrtieTapeModified() function, see README for more info.
 local function writeTapeModified(relPath)
-	--check for tape drive
+	--tape check (moved here)
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
@@ -176,7 +216,7 @@ local function writeTapeModified(relPath)
 end
 
 local function tapeDl(numParts,url)
-	--check for tape drive.
+	--tape check (moved here)
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
@@ -198,6 +238,7 @@ end
 
 --ADDITIONAL: Write single file from URL and label tape
 local function tapeFile(url)
+	--tape check (moved here)
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
@@ -236,6 +277,7 @@ end
 
 -- Function to clear the tape
 local function clearTape()
+	--tape check (moved here)
 	local tape = peripheral.find("tape_drive")
 	if not tape then
 		print("This program requires a tape drive to run.")
@@ -262,33 +304,23 @@ end
 
 
 
-if args[1] == "loop" then
+if programArgs[1] == "loop" then
 	looper()
-elseif args[1] == "file" then
-	if args[2] ~= nil then
-		tapeFile(args[2])
+elseif programArgs[1] == "file" then
+	if programArgs[2] ~= nil then
+		tapeFile(programArgs[2])
 	else
 		print("Usage: recorder file [url] - Please provide a URL to the .dfpwm file.")
 		print("Example: recorder file https://raw.githubusercontent.com/User/Repo/main/MyCoolSong.dfpwm")
 	end
-elseif args[1] == "dl" then
-	if args[2] ~= nil then
+elseif programArgs[1] == "dl" then
+	if programArgs[2] ~= nil then
 		print("running tapeDl")
-		tapeDl(args[2],args[3])
+		tapeDl(programArgs[2],programArgs[3])
 	else helpTextDl()
 	end
-elseif args[1] == "clear" then
+elseif programArgs[1] == "clear" then
 	clearTape()
 else
 	helpText()
 end
-
-
---[[ known issues:
-tape-util dl, does not rewind at start.
-tape-util dl, should say when it rewinds at end, that the program is finished.
-findTapeEnd, timeout protection might not be necessary anymore, adding bloat.
-looper(), could do with some cleaner prints. can screen be cleared?
-looper(), needs accuracy argument! will be very slow on larger cassettes to find length
-
-]]
