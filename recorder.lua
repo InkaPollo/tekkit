@@ -14,7 +14,7 @@ local function helpTextDl()
 	print("Usage:")
 	print(" - 'recorder dl' to display this help text")
 	print(" - 'recorder dl [num files] [web dir]' to write web directory to tape")
-	directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
+	print("directory url must contain ending forward-slash.\nFiles must be named their order number .dfpwm, ex:\n'1.dfpwm', '2.dfpwm', etc")
 end
 
 --TAPE LOOP CONTENT------------
@@ -335,4 +335,3 @@ elseif arg1 == "clear" then
 else
     helpText()
 end
-
